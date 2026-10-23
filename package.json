@@ -1,0 +1,19 @@
+{
+  "name": "adl-rom-patcher",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "astro": "^7.4.2"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.3"
+  },
+  "private": true,
+  "type": "module"
+}
