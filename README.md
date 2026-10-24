@@ -33,6 +33,16 @@ L’URL doit être accessible depuis le navigateur du visiteur, pas uniquement d
 Le fichier `.env` n’est pas copié dans l’image ; Compose transmet uniquement l’adresse publique au build.
 
 Pour la connexion Discord en production, placer le site derrière un reverse proxy HTTPS et autoriser son origine publique dans OAPI (`site_auth.url` ou `site_auth.extra_urls`).
+Le domaine de production du patcher est `https://rom-patcher.antredesloutres.fr`. Installer un certificat HTTPS couvrant exactement ce nom sur le reverse proxy et ajouter cette origine à `site_auth.extra_urls` dans la configuration de production OAPI, puis redémarrer OAPI. Le patcher transmet automatiquement son origine courante à la connexion et à la déconnexion ; l’URL de l’API reste `https://oapi.antredesloutres.fr/api`.
+
+```yaml
+site_auth:
+  url: "https://antredesloutres.fr"
+  extra_urls:
+    - "https://rom-patcher.antredesloutres.fr"
+```
+
+Conserver les autres origines déjà présentes dans `extra_urls`. Le patcher et OAPI partagent ainsi le domaine `antredesloutres.fr`, ce qui évite de dépendre des cookies tiers.
 Nginx conserve les redirections relatives (`absolute_redirect off`) afin qu’un accès à `/amis` reste en HTTPS lors de la redirection vers `/amis/`, même si le reverse proxy communique avec le conteneur en HTTP. Une redirection vers HTTP change l’origine et bloque les appels OAPI depuis le navigateur.
 En local avec OAPI sur `http://localhost:3000`, autoriser `http://localhost:8092`.
 
