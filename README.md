@@ -33,6 +33,7 @@ L’URL doit être accessible depuis le navigateur du visiteur, pas uniquement d
 Le fichier `.env` n’est pas copié dans l’image ; Compose transmet uniquement l’adresse publique au build.
 
 Pour la connexion Discord en production, placer le site derrière un reverse proxy HTTPS et autoriser son origine publique dans OAPI (`site_auth.url` ou `site_auth.extra_urls`).
+Nginx conserve les redirections relatives (`absolute_redirect off`) afin qu’un accès à `/amis` reste en HTTPS lors de la redirection vers `/amis/`, même si le reverse proxy communique avec le conteneur en HTTP. Une redirection vers HTTP change l’origine et bloque les appels OAPI depuis le navigateur.
 En local avec OAPI sur `http://localhost:3000`, autoriser `http://localhost:8092`.
 
 ```sh
