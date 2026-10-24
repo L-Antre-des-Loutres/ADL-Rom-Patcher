@@ -67,7 +67,15 @@ Les demandes reçues peuvent être acceptées ou refusées, les demandes envoyé
 Les listes sont chargées à l’ouverture et après une action, ou manuellement avec « Actualiser » ; aucun polling automatique.
 Une réponse `429` désactive temporairement les appels ; le délai `Retry-After` est respecté, avec 60 secondes par défaut si l’en-tête n’est pas lisible via CORS.
 
-Les documents de liaison ROM décrivent un autre flux. Cette page ne génère pas de codes et ne gère pas les appareils liés.
+## Lier un jeu à son compte Discord
+
+La page `/connexion/`, accessible par « Lier mon jeu », utilise la session Discord OAPI pour générer un code à saisir dans le jeu.
+Le code est créé uniquement après une action explicite sur « Générer un code » (`POST /auth/rom/code?label=…`, sans corps). Le nom de l’appareil est facultatif.
+La page affiche les six chiffres, l’échéance fournie par OAPI, le temps restant et un bouton de copie. Le code est à usage unique et expire après 15 minutes ; un nouveau code remplace le précédent code en attente.
+Il reste uniquement en mémoire et est effacé de la page à l’expiration, à la déconnexion ou lorsqu’on quitte la page. Aucun code ni token n’est enregistré dans le stockage du navigateur.
+
+Les appareils déjà liés sont listés via `GET /auth/rom/devices`, avec leur nom, date de liaison, état et un bouton de révocation avec confirmation (`POST /auth/rom/devices/{id}/revoke`). Après saisie du code dans le jeu, « Actualiser » permet de voir le nouvel appareil ; aucun polling automatique n’est effectué.
+Le site n’appelle jamais `/auth/rom/token` : l’échange du code contre un token est réservé au jeu. Les routes ROM doivent être déployées dans OAPI et la collection PocketBase `discord_identity_token` configurée conformément à sa documentation.
 
 ## Vérification
 

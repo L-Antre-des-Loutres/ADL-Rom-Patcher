@@ -28,6 +28,20 @@ export interface FriendList {
 
 export type FriendAction = 'accept' | 'remove';
 
+export interface RomLinkCode {
+  code: string;
+  expires_at: string;
+  device_id: string;
+}
+
+export interface RomDevice {
+  id: string;
+  label: string;
+  created: string;
+  updated: string;
+  is_disabled: boolean;
+}
+
 const memberId = /^[a-zA-Z0-9]{1,64}$/;
 const messages: Record<number, string> = {
   400: 'Vérifiez l’identifiant OAPI du membre. Vous ne pouvez pas vous ajouter vous-même.',
@@ -113,6 +127,22 @@ export function createOapiClient(baseUrl: string, fetcher: typeof fetch = fetch)
     }
   }
 
+  async function romCall(path: string, method = 'GET'): Promise<unknown> {
+    try {
+      return await call(path, method);
+    } catch (error) {
+      if (error instanceof OapiError) {
+        const romMessages: Record<number, string> = {
+          400: 'Les informations de liaison sont invalides. Vérifiez le nom de l’appareil.',
+          404: 'Le compte ou l’appareil n’a pas été trouvé. Actualisez la liste avant de réessayer.',
+          502: 'La liaison des jeux est temporairement indisponible. Réessayez plus tard.',
+        };
+        if (romMessages[error.status]) throw new OapiError(error.status, romMessages[error.status]);
+      }
+      throw error;
+    }
+  }
+
   return {
     get retryAt() { return retryAt; },
     authUrl(action: 'login' | 'logout', origin: string, returnTo: string) {
@@ -138,6 +168,30 @@ export function createOapiClient(baseUrl: string, fetcher: typeof fetch = fetch)
         throw new OapiError(0, 'La réponse de la liste d’amis est illisible. Réessayez plus tard.');
       }
       return data;
+    },
+    async createRomCode(label = ''): Promise<RomLinkCode> {
+      const query = label.trim() ? `?label=${encodeURIComponent(label.trim())}` : '';
+      const data = await romCall(`/auth/rom/code${query}`, 'POST') as RomLinkCode | null;
+      if (!data || typeof data.code !== 'string' || !/^[1-9]{6}$/.test(data.code)
+        || typeof data.expires_at !== 'string' || !Number.isFinite(Date.parse(data.expires_at.replace(' ', 'T')))
+        || typeof data.device_id !== 'string' || !memberId.test(data.device_id)) {
+        throw new OapiError(0, 'La réponse du code de liaison est illisible. Réessayez plus tard.');
+      }
+      return data;
+    },
+    async getRomDevices(): Promise<RomDevice[]> {
+      const data = await romCall('/auth/rom/devices') as { devices: RomDevice[] } | null;
+      if (!data || !Array.isArray(data.devices) || !data.devices.every((device) => device
+        && typeof device.id === 'string' && memberId.test(device.id)
+        && typeof device.label === 'string' && typeof device.created === 'string'
+        && typeof device.updated === 'string' && typeof device.is_disabled === 'boolean')) {
+        throw new OapiError(0, 'La réponse de la liste des appareils est illisible. Réessayez plus tard.');
+      }
+      return data.devices;
+    },
+    async revokeRomDevice(id: string): Promise<void> {
+      if (!memberId.test(id)) throw new OapiError(400, 'L’identifiant de l’appareil est invalide.');
+      await romCall(`/auth/rom/devices/${encodeURIComponent(id)}/revoke`, 'POST');
     },
     async requestByTag(value: string): Promise<{ friendship_id: string; status: 'pending' | 'accepted' }> {
       const tag = value.trim().replace(/^@/, '').toLowerCase();

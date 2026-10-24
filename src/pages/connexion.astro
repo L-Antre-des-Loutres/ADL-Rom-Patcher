@@ -1,0 +1,153 @@
+---
+import Layout from '../layouts/Layout.astro';
+import '../styles/account.css';
+
+const apiUrl = import.meta.env.PUBLIC_OAPI_URL
+  || (import.meta.env.DEV ? 'http://localhost:3000/api' : 'https://oapi.antredesloutres.fr/api');
+---
+
+<Layout title="Lier mon jeu · ADL ROM Patcher" description="Générez un code temporaire pour lier votre jeu à votre compte Discord et gérez vos appareils connectés.">
+  <header class="friends-nav">
+    <a href="/" class="friends-logo" aria-label="ADL ROM Patcher, accueil">ADL<span>ROM</span></a>
+    <nav aria-label="Navigation principale">
+      <a href="/#jeux">Jeux</a>
+      <a href="/amis/">Amis</a>
+      <a href="/connexion/" aria-current="page">Lier mon jeu</a>
+    </nav>
+  </header>
+
+  <main class="friends-page rom-page" data-api-url={apiUrl}>
+    <div class="friends-heading">
+      <p class="friends-eyebrow">▶ Votre compte, dans le jeu</p>
+      <h1>Un code.<br /><span>Et l’aventure continue.</span></h1>
+      <p class="friends-lead">Liez votre jeu à votre compte Discord pour y retrouver vos amis.</p>
+    </div>
+
+    <p data-session-loading role="status">Vérification de votre connexion…</p>
+    <noscript><p class="friends-panel">Activez JavaScript pour générer un code de liaison.</p></noscript>
+    <div class="friends-alert" data-error hidden role="alert">
+      <p data-error-message></p>
+      <button class="friend-button secondary" type="button" data-retry data-api-control>Réessayer</button>
+    </div>
+    <p class="friends-feedback" data-feedback role="status" aria-live="polite"></p>
+    <p class="friends-cooldown" data-cooldown role="status" hidden></p>
+
+    <section class="friends-panel friends-guest" data-guest hidden aria-labelledby="guest-title">
+      <div class="friends-guest-icon" aria-hidden="true">
+        <svg viewBox="0 0 64 64" width="64" height="64" fill="none" stroke="currentColor" stroke-width="3">
+          <rect x="12" y="7" width="40" height="50" rx="7" /><path d="M21 18h22v15H21zM23 43v10M18 48h10" /><circle cx="42" cy="45" r="2" />
+        </svg>
+      </div>
+      <p class="friends-eyebrow">Votre passerelle vers le jeu</p>
+      <h2 id="guest-title">Connectez votre compte Discord</h2>
+      <p>Connectez-vous pour créer un code de liaison personnel et gérer vos appareils.</p>
+      <a class="friend-button discord" data-login>Se connecter avec Discord <span aria-hidden="true">↗</span></a>
+      <p class="friends-small">La connexion est gérée par OAPI.</p>
+    </section>
+
+    <section class="friends-account friends-panel" data-account hidden aria-label="Compte connecté">
+      <div class="friends-identity">
+        <div class="friend-avatar" aria-hidden="true"><span data-account-initial></span></div>
+        <div><strong data-account-name></strong><p class="friends-connected">● Connecté avec Discord</p></div>
+      </div>
+      <a class="friends-logout" data-logout>Se déconnecter</a>
+    </section>
+
+    <div data-workspace hidden>
+      <ol class="rom-steps" aria-label="Comment lier votre jeu">
+        <li><span>01</span><div><strong>Générez votre code</strong><p>Au moment de connecter votre jeu.</p></div></li>
+        <li><span>02</span><div><strong>Saisissez-le dans le jeu</strong><p>Vous disposez de 15 minutes.</p></div></li>
+        <li><span>03</span><div><strong>Retrouvez vos amis</strong><p>Votre compte est lié à cet appareil.</p></div></li>
+      </ol>
+
+      <section class="friends-panel rom-generator" aria-labelledby="code-title">
+        <div class="rom-generator-intro">
+          <p class="friends-eyebrow">+ Prêt à vous connecter ?</p>
+          <h2 id="code-title">Votre code de liaison</h2>
+          <p>Nommez votre appareil pour le reconnaître plus tard, puis générez le code à saisir dans votre jeu.</p>
+          <form data-code-form>
+            <label for="device-label">Nom de l’appareil <span class="friends-small">(facultatif)</span></label>
+            <input id="device-label" name="label" type="text" maxlength="32" placeholder="Ex. Ma console" autocomplete="off" data-api-control disabled />
+            <button class="friend-button" type="submit" data-generate data-api-control disabled>Générer un code</button>
+          </form>
+          <p class="friends-small rom-hint">Générer un nouveau code remplace le précédent code en attente. Vos appareils déjà liés restent connectés.</p>
+        </div>
+        <div class="rom-code-screen">
+          <div data-code-placeholder>
+            <span class="rom-placeholder-icon" aria-hidden="true">⌁</span>
+            <p>Votre prochain point de départ</p>
+            <p class="friends-small">Votre code apparaîtra ici, uniquement à votre demande.</p>
+          </div>
+          <div data-code-panel hidden aria-label="Code de liaison actif">
+            <p class="rom-code-caption">À saisir dans votre jeu</p>
+            <output class="rom-code-value" data-code-value></output>
+            <p class="rom-code-validity">Expire le <time data-expires></time></p>
+            <p class="rom-countdown" data-countdown aria-live="off"></p>
+            <button class="friend-button secondary" data-copy type="button" disabled>Copier le code</button>
+            <p class="friends-small">À usage unique. Saisissez-le uniquement dans le jeu à lier.</p>
+          </div>
+        </div>
+      </section>
+
+      <div class="friends-list-heading">
+        <h2>Mes appareils <span class="friend-count" data-device-count>—</span></h2>
+        <button class="friend-button secondary" data-refresh type="button" data-api-control disabled>↻ Actualiser</button>
+      </div>
+      <section class="friends-panel" aria-label="Appareils liés">
+        <p class="friends-small rom-hint">Après avoir saisi le code dans le jeu, actualisez cette liste pour retrouver votre nouvel appareil.</p>
+        <p data-devices-loading role="status" hidden>Chargement de vos appareils…</p>
+        <ul class="friend-list" data-devices></ul>
+        <p class="friends-empty" data-devices-empty hidden>Aucun appareil lié pour le moment. Commencez avec votre premier code !</p>
+      </section>
+    </div>
+
+    <template data-device-template>
+      <li class="friend-row">
+        <div class="friend-person">
+          <div class="friend-avatar" aria-hidden="true">▣</div>
+          <div class="friend-profile"><h3 data-device-name></h3><p data-device-date></p><p class="rom-device-status" data-device-status></p></div>
+        </div>
+        <button class="friend-button danger" type="button" data-revoke data-api-control>Révoquer</button>
+      </li>
+    </template>
+    <dialog class="friends-dialog" data-confirm-dialog aria-labelledby="revoke-title" aria-describedby="revoke-description">
+      <h2 id="revoke-title">Déconnecter cet appareil ?</h2>
+      <p id="revoke-description"></p>
+      <form method="dialog" class="friend-actions">
+        <button class="friend-button secondary" value="cancel" autofocus>Garder l’appareil</button>
+        <button class="friend-button danger" value="confirm">Révoquer</button>
+      </form>
+    </dialog>
+    <p class="friends-footer">ADL ROM Patcher · Les bonnes aventures se jouent ensemble.</p>
+  </main>
+</Layout>
+
+<script>
+  import { initRomPage } from '../lib/rom-page';
+  initRomPage(document.querySelector<HTMLElement>('.rom-page')!);
+</script>
+
+<style is:global>
+  .rom-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; list-style: none; padding: 0; margin: 1.5rem 0 2rem; }
+  .rom-steps li { display: flex; gap: .8rem; align-items: flex-start; }
+  .rom-steps li > span { color: var(--cyan); font: .8rem var(--pixel); padding-top: .4rem; }
+  .rom-steps strong { font-size: .95rem; }
+  .rom-steps p { color: var(--muted); font-size: .85rem; margin: .25rem 0 0; }
+  .rom-generator { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; border-color: #4b4660; }
+  .rom-generator-intro > p:not(.friends-eyebrow) { color: var(--muted); }
+  .rom-generator label { display: block; font-weight: 800; margin: 1.5rem 0 .5rem; }
+  .rom-generator label span { color: var(--muted); font-weight: 400; }
+  .rom-generator form button { margin-top: 1rem; }
+  .rom-page .rom-hint { color: var(--muted); }
+  .rom-code-screen { background: radial-gradient(ellipse at top, #273258, #0d1021); border: 2px solid var(--border); border-radius: 12px; padding: 1.5rem; display: grid; place-items: center; text-align: center; min-height: 290px; min-width: 0; }
+  .rom-code-screen [data-code-placeholder] { color: var(--muted); max-width: 240px; }
+  .rom-placeholder-icon { display: block; color: var(--cyan); font-size: 4rem; line-height: 1; }
+  .rom-code-caption { font-size: .85rem; color: var(--cyan); margin: 0 0 1.2rem; }
+  .rom-code-value { display: block; font: clamp(1.5rem, 3vw, 2rem) var(--pixel); color: var(--gold); letter-spacing: .15em; padding-left: .15em; }
+  .rom-code-validity { color: var(--muted); font-size: .8rem; margin-top: 1.5rem; }
+  .rom-countdown { font-weight: 800; color: var(--cyan); }
+  .rom-code-screen .friends-small { color: var(--muted); margin-bottom: 0; }
+  .rom-device-status[data-disabled='true'] { color: var(--gold); }
+  .rom-device-status[data-disabled='false'] { color: #8ee5b5; }
+  @media (max-width: 760px) { .rom-generator { grid-template-columns: 1fr; gap: 1rem; } .rom-steps { grid-template-columns: 1fr; gap: 1.1rem; } .rom-code-value { font-size: 1.6rem; } }
+</style>
