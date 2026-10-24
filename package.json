@@ -4,6 +4,7 @@
   "description": "",
   "scripts": {
     "dev": "astro dev",
+    "test": "node --test tests/*.test.mjs",
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro"

@@ -1,0 +1,80 @@
+---
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description = 'Patchez vos ROMs Nintendo DS directement dans votre navigateur.' } = Astro.props;
+---
+
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <title>{title}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Nunito:wght@400;600;800&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>
+
+<style is:global>
+  :root {
+    --bg: #0d1021;
+    --bg-alt: #151a33;
+    --surface: #1c2244;
+    --border: #2c3566;
+    --text: #e8ebff;
+    --muted: #9aa3d4;
+    --gold: #f2c14e;
+    --gold-dark: #b8862b;
+    --red: #e63946;
+    --red-dark: #a4161a;
+    --cyan: #5ce1e6;
+    --screen: #9bbc0f;
+    --pixel: 'Press Start 2P', monospace;
+    --sans: 'Nunito', system-ui, sans-serif;
+  }
+
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    margin: 0;
+    font-family: var(--sans);
+    color: var(--text);
+    background:
+      radial-gradient(circle at 20% 0%, rgba(242, 193, 78, 0.12), transparent 40%),
+      radial-gradient(circle at 80% 30%, rgba(230, 57, 70, 0.12), transparent 40%),
+      var(--bg);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a {
+    color: inherit;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--pixel);
+    line-height: 1.4;
+    font-weight: 400;
+  }
+</style>

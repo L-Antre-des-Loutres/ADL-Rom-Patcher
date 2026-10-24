@@ -1,0 +1,296 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { allGames } from '../data/games';
+
+export function getStaticPaths() {
+  return allGames.map((game) => ({ params: { slug: game.slug }, props: { game } }));
+}
+
+const { game } = Astro.props;
+---
+
+<Layout title={`${game.name} · ADL ROM Patcher`}>
+  <header class="nav">
+    <a href="/" class="logo">ADL<span>ROM</span></a>
+    <nav aria-label="Navigation principale">
+      <a href="/#jeux" class="back">◀ Tous les jeux</a>
+      <a href="/amis" class="back">Amis</a>
+    </nav>
+  </header>
+
+  <main>
+    <p class="eyebrow">▶ {game.category.name}</p>
+    <h1>{game.name}</h1>
+    <p class="meta">Version attendue : <code>{game.codes.join(' / ')}</code> · {game.size}</p>
+
+    <div class="patcher" data-slug={game.slug} data-codes={game.codes.join(',')}>
+      <label class="drop">
+        <input type="file" accept=".nds" hidden />
+        <span class="drop-main">Glissez votre ROM ici</span>
+        <span class="drop-sub">ou cliquez pour choisir un fichier <code>.nds</code></span>
+      </label>
+
+      <dl class="info" hidden>
+        <dt>Fichier</dt><dd data-field="file"></dd>
+        <dt>Titre</dt><dd data-field="title"></dd>
+        <dt>Code</dt><dd data-field="code"></dd>
+      </dl>
+
+      <p class="status" role="status"></p>
+
+      <button type="button" class="btn" disabled>Patcher la ROM</button>
+    </div>
+
+    <p class="note">Votre ROM est lue et patchée dans votre navigateur. Elle ne quitte jamais votre ordinateur.</p>
+  </main>
+</Layout>
+
+<script>
+  import { applyPatch, readHeader } from '../lib/patcher';
+
+  const root = document.querySelector<HTMLElement>('.patcher')!;
+  const input = root.querySelector<HTMLInputElement>('input[type=file]')!;
+  const drop = root.querySelector<HTMLElement>('.drop')!;
+  const info = root.querySelector<HTMLElement>('.info')!;
+  const status = root.querySelector<HTMLElement>('.status')!;
+  const button = root.querySelector<HTMLButtonElement>('.btn')!;
+  const slug = root.dataset.slug!;
+  const codes = root.dataset.codes!.split(',');
+
+  let rom: File | null = null;
+
+  const field = (name: string) => root.querySelector<HTMLElement>(`[data-field="${name}"]`)!;
+
+  function setStatus(text: string, kind: 'ok' | 'warn' | 'error' | '' = '') {
+    status.textContent = text;
+    status.dataset.kind = kind;
+  }
+
+  async function load(file: File) {
+    rom = file;
+    const header = await readHeader(file);
+    field('file').textContent = `${file.name} (${(file.size / 1024 / 1024).toFixed(1)} Mo)`;
+    field('title').textContent = header.title || '—';
+    field('code').textContent = header.code || '—';
+    info.hidden = false;
+    button.disabled = false;
+
+    if (codes.includes(header.code)) {
+      setStatus('ROM reconnue, vous pouvez lancer le patch.', 'ok');
+    } else {
+      setStatus(`Code ${header.code || 'inconnu'} au lieu de ${codes.join(' / ')} : ce n'est peut-être pas la bonne version.`, 'warn');
+    }
+  }
+
+  input.addEventListener('change', () => input.files?.[0] && load(input.files[0]));
+
+  drop.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    drop.classList.add('over');
+  });
+  drop.addEventListener('dragleave', () => drop.classList.remove('over'));
+  drop.addEventListener('drop', (e) => {
+    e.preventDefault();
+    drop.classList.remove('over');
+    const file = e.dataTransfer?.files[0];
+    if (file) load(file);
+  });
+
+  button.addEventListener('click', async () => {
+    if (!rom) return;
+    button.disabled = true;
+    setStatus('Patch en cours…');
+    try {
+      const patched = await applyPatch(slug, await rom.arrayBuffer());
+      const url = URL.createObjectURL(new Blob([patched]));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = rom.name.replace(/\.nds$/i, '') + '-patched.nds';
+      a.click();
+      URL.revokeObjectURL(url);
+      setStatus('Terminé, le téléchargement a démarré.', 'ok');
+    } catch (err) {
+      setStatus(err instanceof Error ? err.message : 'Le patch a échoué.', 'error');
+    } finally {
+      button.disabled = false;
+    }
+  });
+</script>
+
+<style>
+  .nav,
+  main {
+    width: min(900px, 100% - 32px);
+    margin-inline: auto;
+  }
+
+  .nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.5rem 0;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .nav nav { display: flex; flex-wrap: wrap; gap: 1.5rem; }
+
+  .logo {
+    font-family: var(--pixel);
+    font-size: 0.9rem;
+    text-decoration: none;
+  }
+
+  .logo span {
+    color: var(--gold);
+    margin-left: 0.3rem;
+  }
+
+  .back {
+    font-weight: 600;
+    text-decoration: none;
+    color: var(--muted);
+  }
+
+  .back:hover {
+    color: var(--text);
+  }
+
+  main {
+    padding: 2rem 0 4rem;
+  }
+
+  .eyebrow {
+    font-family: var(--pixel);
+    font-size: 0.7rem;
+    color: var(--cyan);
+    margin: 0 0 1rem;
+  }
+
+  h1 {
+    font-size: clamp(1.3rem, 3.4vw, 2rem);
+    margin: 0 0 1rem;
+    color: var(--gold);
+    text-shadow: 3px 3px 0 var(--red-dark);
+  }
+
+  .meta {
+    margin: 0 0 2.5rem;
+    color: var(--muted);
+  }
+
+  code {
+    color: var(--text);
+  }
+
+  .patcher {
+    padding: 1.5rem;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 18px;
+  }
+
+  .drop {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 3rem 1rem;
+    text-align: center;
+    background: var(--bg-alt);
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+  }
+
+  .drop:hover,
+  .drop.over {
+    border-color: var(--gold);
+  }
+
+  .drop.over {
+    background: #1f2650;
+  }
+
+  .drop-main {
+    font-family: var(--pixel);
+    font-size: 0.85rem;
+  }
+
+  .drop-sub {
+    color: var(--muted);
+  }
+
+  .info {
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    gap: 0.3rem 1rem;
+    margin: 1.5rem 0 0;
+  }
+
+  .info[hidden] {
+    display: none;
+  }
+
+  .info dt {
+    color: var(--muted);
+  }
+
+  .info dd {
+    margin: 0;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+
+  .status {
+    min-height: 1.6em;
+    margin: 1.2rem 0;
+  }
+
+  .status[data-kind='ok'] {
+    color: #7ee08a;
+  }
+
+  .status[data-kind='warn'] {
+    color: var(--gold);
+  }
+
+  .status[data-kind='error'] {
+    color: #ff7b85;
+  }
+
+  .btn {
+    font-family: var(--pixel);
+    font-size: 0.8rem;
+    color: #1a1300;
+    background: var(--gold);
+    border: none;
+    padding: 1rem 1.6rem;
+    border-radius: 10px;
+    box-shadow: 0 5px 0 var(--gold-dark);
+    cursor: pointer;
+    transition: transform 0.1s, box-shadow 0.1s;
+  }
+
+  .btn:hover:not(:disabled) {
+    transform: translateY(2px);
+    box-shadow: 0 3px 0 var(--gold-dark);
+  }
+
+  .btn:active:not(:disabled) {
+    transform: translateY(5px);
+    box-shadow: 0 0 0 var(--gold-dark);
+  }
+
+  .btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .note {
+    margin: 2rem 0 0;
+    font-size: 0.9rem;
+    color: var(--muted);
+  }
+</style>

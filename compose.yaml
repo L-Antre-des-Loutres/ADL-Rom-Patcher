@@ -1,0 +1,9 @@
+services:
+  site:
+    build:
+      context: .
+      args:
+        PUBLIC_OAPI_URL: ${PUBLIC_OAPI_URL:-https://oapi.antredesloutres.fr/api}
+    ports:
+      - "8093:80"
+    restart: unless-stopped

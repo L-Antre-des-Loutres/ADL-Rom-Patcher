@@ -1,0 +1,175 @@
+---
+interface Props {
+  title: string;
+  subtitle: string;
+  description: string;
+  href: string;
+  accent: string;
+  accentDark: string;
+  tags: string[];
+  icon: 'pokeball' | 'kart';
+}
+
+const { title, subtitle, description, href, accent, accentDark, tags, icon } = Astro.props;
+---
+
+<a class="card" href={href} style={`--accent: ${accent}; --accent-dark: ${accentDark};`}>
+  <div class="cartridge">
+    <div class="label">
+      {
+        icon === 'pokeball' ? (
+          <svg viewBox="0 0 64 64" aria-hidden="true">
+            <circle cx="32" cy="32" r="28" fill="#fff" stroke="#111" stroke-width="4" />
+            <path d="M4 32a28 28 0 0 1 56 0Z" fill="var(--accent)" stroke="#111" stroke-width="4" />
+            <rect x="4" y="29" width="56" height="6" fill="#111" />
+            <circle cx="32" cy="32" r="9" fill="#fff" stroke="#111" stroke-width="4" />
+            <circle cx="32" cy="32" r="4" fill="#fff" stroke="#111" stroke-width="2" />
+          </svg>
+        ) : (
+          <svg viewBox="0 0 64 64" aria-hidden="true">
+            <rect x="6" y="6" width="52" height="52" rx="4" fill="#fff" />
+            <g fill="#111">
+              <rect x="6" y="6" width="13" height="13" />
+              <rect x="32" y="6" width="13" height="13" />
+              <rect x="19" y="19" width="13" height="13" />
+              <rect x="45" y="19" width="13" height="13" />
+              <rect x="6" y="32" width="13" height="13" />
+              <rect x="32" y="32" width="13" height="13" />
+              <rect x="19" y="45" width="13" height="13" />
+              <rect x="45" y="45" width="13" height="13" />
+            </g>
+            <rect x="6" y="6" width="52" height="52" rx="4" fill="none" stroke="var(--accent)" stroke-width="4" />
+          </svg>
+        )
+      }
+    </div>
+    <span class="ds-tag">NDS</span>
+  </div>
+
+  <div class="body">
+    <p class="subtitle">{subtitle}</p>
+    <h3>{title}</h3>
+    <p class="desc">{description}</p>
+    <ul class="tags">
+      {tags.map((tag) => <li>{tag}</li>)}
+    </ul>
+    <span class="cta">Patcher ▶</span>
+  </div>
+</a>
+
+<style>
+  .card {
+    display: flex;
+    flex-direction: column;
+    text-decoration: none;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 18px;
+    overflow: hidden;
+    transition:
+      transform 0.2s ease,
+      border-color 0.2s ease,
+      box-shadow 0.2s ease;
+  }
+
+  .card:hover,
+  .card:focus-visible {
+    transform: translateY(-6px);
+    border-color: var(--accent);
+    box-shadow: 0 16px 40px -12px var(--accent);
+    outline: none;
+  }
+
+  .cartridge {
+    position: relative;
+    display: grid;
+    place-items: center;
+    padding: 2rem;
+    background:
+      repeating-linear-gradient(45deg, transparent 0 12px, rgba(255, 255, 255, 0.04) 12px 24px),
+      linear-gradient(135deg, var(--accent), var(--accent-dark));
+  }
+
+  .label {
+    width: 120px;
+    height: 120px;
+    display: grid;
+    place-items: center;
+    background: rgba(0, 0, 0, 0.25);
+    border-radius: 14px;
+    transition: transform 0.3s ease;
+  }
+
+  .card:hover .label {
+    transform: rotate(-8deg) scale(1.05);
+  }
+
+  .label svg {
+    width: 84px;
+    height: 84px;
+  }
+
+  .ds-tag {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    font-family: var(--pixel);
+    font-size: 0.55rem;
+    padding: 0.4rem 0.5rem;
+    background: rgba(0, 0, 0, 0.45);
+    border-radius: 6px;
+  }
+
+  .body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    padding: 1.5rem;
+    flex: 1;
+  }
+
+  .subtitle {
+    margin: 0;
+    font-size: 0.8rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  h3 {
+    margin: 0;
+    font-size: 0.95rem;
+  }
+
+  .desc {
+    margin: 0;
+    color: var(--muted);
+  }
+
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin: 0.4rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .tags li {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.2rem 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: var(--muted);
+  }
+
+  .cta {
+    margin-top: auto;
+    padding-top: 1rem;
+    font-family: var(--pixel);
+    font-size: 0.7rem;
+    color: var(--accent);
+  }
+</style>

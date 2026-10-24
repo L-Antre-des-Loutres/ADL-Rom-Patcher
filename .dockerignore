@@ -1,0 +1,14 @@
+.git
+.astro
+.claude
+.codex
+.agents
+.idea
+.vscode
+node_modules
+dist
+tmp
+tests
+.env
+.env.*
+npm-debug.log*

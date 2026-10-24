@@ -1,0 +1,218 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const apiUrl = import.meta.env.PUBLIC_OAPI_URL
+  || (import.meta.env.DEV ? 'http://localhost:3000/api' : 'https://oapi.antredesloutres.fr/api');
+---
+
+<Layout title="Mes amis · ADL ROM Patcher" description="Gérez vos amis et vos demandes d’amitié avec votre compte Discord via OAPI.">
+  <header class="friends-nav">
+    <a href="/" class="friends-logo" aria-label="ADL ROM Patcher, accueil">ADL<span>ROM</span></a>
+    <nav aria-label="Navigation principale">
+      <a href="/#jeux">Jeux</a>
+      <a href="/amis" aria-current="page">Amis</a>
+    </nav>
+  </header>
+
+  <main class="friends-page" data-api-url={apiUrl}>
+    <div class="friends-heading">
+      <p class="friends-eyebrow">▶ Votre espace Discord</p>
+      <h1>Une aventure,<br /><span>ça se partage.</span></h1>
+      <p class="friends-lead">Retrouvez vos amis et gérez vos demandes au même endroit.</p>
+    </div>
+
+    <p data-session-loading role="status">Vérification de votre connexion…</p>
+    <noscript><p class="friends-panel">Activez JavaScript pour vous connecter avec Discord et gérer vos amis.</p></noscript>
+
+    <div class="friends-alert" data-error hidden role="alert">
+      <p data-error-message></p>
+      <button type="button" class="friend-button secondary" data-retry data-api-control>Réessayer</button>
+    </div>
+    <p class="friends-feedback" data-feedback role="status" aria-live="polite"></p>
+    <p class="friends-cooldown" data-cooldown role="status" hidden></p>
+
+    <section class="friends-panel friends-guest" data-guest hidden aria-labelledby="guest-title">
+      <div class="friends-guest-icon" aria-hidden="true">
+        <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" width="64" height="64">
+          <circle cx="24" cy="22" r="9" /><path d="M7 52v-4a17 17 0 0 1 34 0v4M43 14a9 9 0 0 1 0 18M47 37a16 16 0 0 1 10 15" />
+        </svg>
+      </div>
+      <p class="friends-eyebrow">Le point de rendez-vous</p>
+      <h2 id="guest-title">Vos amis vous attendent</h2>
+      <p>Connectez-vous avec votre compte Discord pour envoyer une demande,<br class="desktop-break" /> accepter une invitation ou retrouver votre liste d’amis.</p>
+      <a class="friend-button discord" data-login>Se connecter avec Discord <span aria-hidden="true">↗</span></a>
+      <p class="friends-small">La connexion est gérée par OAPI.</p>
+    </section>
+
+    <section class="friends-account friends-panel" data-account hidden aria-label="Compte connecté">
+      <div class="friends-identity">
+        <div class="friend-avatar"><span data-account-initial aria-hidden="true"></span><img data-account-avatar alt="" hidden referrerpolicy="no-referrer" /></div>
+        <div><strong data-account-name></strong><p class="friends-connected">● Connecté avec Discord</p></div>
+      </div>
+      <a class="friends-logout" data-logout>Se déconnecter</a>
+    </section>
+
+    <div data-workspace hidden>
+      <section class="friends-panel friends-add" aria-labelledby="add-title">
+        <div>
+          <p class="friends-eyebrow">+ Agrandissez votre équipe</p>
+          <h2 id="add-title">Ajouter un ami</h2>
+          <p>Envoyez une demande à un autre membre.</p>
+        </div>
+        <form data-add-form>
+          <label for="friend-id">Identifiant OAPI du membre</label>
+          <div class="friends-input-row">
+            <input id="friend-id" name="member" type="text" placeholder="Ex. a1b2c3d4e5f6g7h" required maxlength="64" pattern="[a-zA-Z0-9]{1,64}" aria-describedby="friend-id-help" autocomplete="off" spellcheck="false" data-api-control disabled />
+            <button class="friend-button" type="submit" data-api-control disabled>Envoyer la demande</button>
+          </div>
+          <p id="friend-id-help" class="friends-small">Utilisez son identifiant de membre OAPI, distinct de son pseudo et de son identifiant Discord.</p>
+        </form>
+      </section>
+
+      <div class="friends-list-heading">
+        <h2>Mes amis <span class="friend-count" data-count="friends">—</span></h2>
+        <button class="friend-button secondary" type="button" data-refresh data-api-control disabled>↻ Actualiser</button>
+      </div>
+      <p data-list-loading role="status" hidden>Chargement de vos amis…</p>
+
+      <div data-lists hidden>
+        <section class="friends-panel" aria-label="Liste de mes amis">
+          <label class="friends-search-label" for="friend-search">Rechercher dans mes amis</label>
+          <input class="friends-search" id="friend-search" type="search" placeholder="Un nom, un pseudo…" autocomplete="off" data-search />
+          <ul class="friend-list" data-list="friends"></ul>
+          <p class="friends-empty" data-empty="friends">Votre équipe commence ici. Envoyez votre première demande !</p>
+        </section>
+
+        <div class="friends-requests">
+          <section class="friends-panel" aria-labelledby="incoming-title">
+            <div class="friends-section-title"><span class="friends-arrow" aria-hidden="true">↙</span><h2 id="incoming-title">Demandes reçues <span class="friend-count" data-count="incoming">—</span></h2></div>
+            <ul class="friend-list" data-list="incoming"></ul>
+            <p class="friends-empty" data-empty="incoming">Aucune demande en attente. Vous êtes à jour !</p>
+          </section>
+          <section class="friends-panel" aria-labelledby="outgoing-title">
+            <div class="friends-section-title"><span class="friends-arrow outgoing" aria-hidden="true">↗</span><h2 id="outgoing-title">Demandes envoyées <span class="friend-count" data-count="outgoing">—</span></h2></div>
+            <ul class="friend-list" data-list="outgoing"></ul>
+            <p class="friends-empty" data-empty="outgoing">Aucune demande envoyée pour le moment.</p>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <template data-friend-template>
+      <li class="friend-row">
+        <div class="friend-person">
+          <div class="friend-avatar"><span data-initial aria-hidden="true"></span><img data-avatar alt="" hidden referrerpolicy="no-referrer" /></div>
+          <div class="friend-profile"><h3 data-name></h3><p data-tag></p><p class="friend-since" data-since></p><p class="friend-member-id">ID OAPI : <code data-member-id></code></p></div>
+        </div>
+        <div class="friend-actions" data-actions></div>
+      </li>
+    </template>
+
+    <dialog class="friends-dialog" data-confirm-dialog aria-labelledby="remove-title" aria-describedby="remove-description">
+      <h2 id="remove-title">Retirer cet ami ?</h2>
+      <p id="remove-description"></p>
+      <form method="dialog" class="friend-actions">
+        <button class="friend-button secondary" value="cancel" autofocus>Garder cet ami</button>
+        <button class="friend-button danger" value="confirm">Retirer</button>
+      </form>
+    </dialog>
+    <p class="friends-footer">ADL ROM Patcher · Les bonnes aventures se jouent ensemble.</p>
+  </main>
+</Layout>
+
+<script>
+  import { initFriendsPage } from '../lib/friends-page';
+  initFriendsPage(document.querySelector<HTMLElement>('.friends-page')!);
+</script>
+
+<style is:global>
+  .friends-nav, .friends-page { width: min(1100px, 100% - 32px); margin-inline: auto; }
+  .friends-nav { display: flex; align-items: center; justify-content: space-between; padding: 1.5rem 0; gap: 1rem; }
+  .friends-logo { font-family: var(--pixel); font-size: .9rem; text-decoration: none; }
+  .friends-logo span { color: var(--gold); margin-left: .3rem; }
+  .friends-nav nav { display: flex; gap: 1.5rem; }
+  .friends-nav nav a { color: var(--muted); text-decoration: none; font-weight: 800; }
+  .friends-nav nav a[aria-current], .friends-nav nav a:hover { color: var(--gold); }
+  .friends-page { padding: 2.5rem 0 1rem; }
+  .friends-page [hidden] { display: none !important; }
+  .friends-heading { max-width: 760px; margin-bottom: 2rem; }
+  .friends-eyebrow { color: var(--cyan); font-family: var(--pixel); font-size: .6rem; line-height: 1.9; margin: 0 0 1rem; }
+  .friends-heading h1 { font-size: clamp(1.3rem, 3.3vw, 2.1rem); line-height: 1.65; margin: 0 0 1rem; }
+  .friends-heading h1 span { color: var(--gold); text-shadow: 3px 3px 0 var(--gold-dark); }
+  .friends-lead { color: var(--muted); font-size: 1.1rem; margin: 0; }
+  .friends-page h2 { font-size: .8rem; margin: 0; line-height: 1.8; }
+  .friends-panel { background: var(--bg-alt); border: 2px solid var(--border); border-radius: 18px; padding: 1.6rem; }
+  .friends-guest { padding: 3rem 1.5rem; text-align: center; background: radial-gradient(ellipse at top, #252c54, var(--bg-alt) 70%); }
+  .friends-guest-icon { width: 100px; height: 100px; display: grid; place-items: center; margin: 0 auto 1.4rem; color: var(--cyan); border: 2px dashed var(--border); border-radius: 24px; background: var(--bg); }
+  .friends-guest h2 { font-size: clamp(.8rem, 2vw, 1.1rem); color: var(--gold); }
+  .friends-guest > p:not(.friends-eyebrow) { color: var(--muted); }
+  .friends-guest .friend-button { margin: .6rem 0 .8rem; }
+  .friends-page .friend-button { display: inline-flex; align-items: center; justify-content: center; gap: .8rem; min-height: 44px; padding: .7rem 1rem; border: 2px solid transparent; border-radius: 9px; background: var(--gold); color: #211900; font: 800 .95rem var(--sans); cursor: pointer; text-decoration: none; text-align: center; transition: background .15s, border-color .15s; }
+  .friends-page .friend-button:hover:not(:disabled) { background: #ffdb84; }
+  .friends-page .friend-button.secondary { background: var(--surface); color: var(--text); border-color: var(--border); }
+  .friends-page .friend-button.secondary:hover:not(:disabled) { border-color: var(--muted); }
+  .friends-page .friend-button.discord { background: #5865f2; color: white; }
+  .friends-page .friend-button.discord:hover { background: #4752c4; }
+  .friends-page .friend-button.danger { background: #3b1f32; border-color: #7a344b; color: #ffa3ab; }
+  .friends-page .friend-button.danger:hover:not(:disabled) { background: #55263d; }
+  .friends-page .friend-button:disabled, .friends-page input:disabled { opacity: .5; cursor: not-allowed; }
+  .friends-page :is(a, button, input):focus-visible, .friends-nav a:focus-visible { outline: 3px solid var(--cyan); outline-offset: 4px; }
+  .friends-account, .friends-identity { display: flex; align-items: center; gap: 1rem; }
+  .friends-account { justify-content: space-between; margin-bottom: 1.5rem; }
+  .friends-identity { min-width: 0; }
+  .friends-identity strong { font-size: 1.15rem; overflow-wrap: anywhere; }
+  .friends-connected { color: #8ee5b5; margin: .15rem 0 0; font-size: .85rem; }
+  .friends-logout { color: var(--muted); font-size: .9rem; white-space: nowrap; text-underline-offset: 4px; }
+  .friend-avatar { position: relative; width: 48px; height: 48px; flex-shrink: 0; display: grid; place-items: center; overflow: hidden; border-radius: 14px; background: #2b345d; color: var(--cyan); font: 800 1.3rem var(--sans); }
+  .friend-avatar img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .friends-add { display: grid; grid-template-columns: 1fr 1.7fr; gap: 2rem; align-items: center; border-color: #4b4660; }
+  .friends-add .friends-eyebrow { color: var(--gold); margin-bottom: .6rem; }
+  .friends-add p { color: var(--muted); margin-bottom: 0; }
+  .friends-add label { display: block; font-weight: 800; margin-bottom: .5rem; }
+  .friends-input-row { display: flex; gap: .65rem; }
+  .friends-page input { width: 100%; min-width: 0; min-height: 46px; padding: .75rem .9rem; color: var(--text); background: var(--bg); border: 2px solid var(--border); border-radius: 9px; font: 1rem var(--sans); color-scheme: dark; }
+  .friends-page input::placeholder { color: var(--muted); opacity: .8; }
+  .friends-input-row button { flex-shrink: 0; }
+  .friends-small { font-size: .82rem; }
+  .friends-list-heading { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin: 2.5rem 0 1rem; }
+  .friend-count { display: inline-flex; justify-content: center; align-items: center; min-width: 1.8rem; min-height: 1.8rem; padding: .15rem .4rem; margin-left: .3rem; color: var(--cyan); background: var(--surface); border-radius: 7px; font: 800 .85rem var(--sans); vertical-align: middle; }
+  .friends-search-label { display: block; font-size: .9rem; color: var(--muted); margin-bottom: .4rem; }
+  .friends-search { max-width: 380px; margin-bottom: .5rem; }
+  .friends-requests { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1.5rem; }
+  .friends-section-title { display: flex; align-items: center; gap: .8rem; margin-bottom: .8rem; }
+  .friends-section-title h2 { font-size: .65rem; }
+  .friends-arrow { color: var(--cyan); font-size: 1.8rem; line-height: 1; }
+  .friends-arrow.outgoing { color: var(--gold); }
+  .friend-list { list-style: none; padding: 0; margin: 0; }
+  .friend-row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1rem; padding: 1.2rem 0; }
+  .friend-row + .friend-row { border-top: 1px solid var(--border); }
+  .friend-person { display: flex; gap: .9rem; align-items: center; min-width: 0; }
+  .friend-profile { min-width: 0; overflow-wrap: anywhere; }
+  .friend-profile h3 { font: 800 1.05rem var(--sans); margin: 0; }
+  .friend-profile p { font-size: .85rem; margin: .1rem 0 0; color: var(--muted); }
+  .friend-profile .friend-since, .friend-profile .friend-member-id { font-size: .75rem; }
+  .friend-member-id code { color: var(--muted); font-size: .75rem; user-select: all; }
+  .friend-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+  .friend-actions .friend-button { font-size: .85rem; padding: .45rem .8rem; }
+  .friends-empty { color: var(--muted); padding: 1.5rem .2rem; margin: 0; font-size: .95rem; }
+  .friends-alert { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; justify-content: space-between; background: #382334; border: 1px solid #7a344b; border-radius: 12px; padding: 1rem; margin-bottom: 1.5rem; color: #ffb2b9; }
+  .friends-alert p { margin: 0; flex: 1 1 260px; }
+  .friends-feedback:empty { display: none; }
+  .friends-feedback { color: #8ee5b5; padding: .7rem 0; }
+  .friends-cooldown { color: var(--gold); }
+  .friends-dialog { max-width: min(460px, 100% - 32px); border: 2px solid var(--border); border-radius: 16px; background: var(--bg-alt); color: var(--text); padding: 1.7rem; font-family: var(--sans); }
+  .friends-dialog::backdrop { background: rgb(5 8 23 / .8); }
+  .friends-dialog p { overflow-wrap: anywhere; }
+  .friends-footer { text-align: center; color: var(--muted); font-size: .8rem; margin: 3rem 0 1rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
+  @media (max-width: 850px) { .friends-add { grid-template-columns: 1fr; gap: 1.5rem; } .friends-requests { grid-template-columns: 1fr; } }
+  @media (max-width: 520px) {
+    .friends-page { padding-top: 1.5rem; }
+    .friends-panel { padding: 1.1rem; }
+    .friends-input-row { flex-direction: column; }
+    .friends-account { flex-wrap: wrap; }
+    .friends-logout { margin-left: 4rem; }
+    .friends-page h2 { font-size: .7rem; }
+    .friends-guest { padding-block: 2rem; }
+    .desktop-break { display: none; }
+  }
+</style>
