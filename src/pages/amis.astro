@@ -60,12 +60,12 @@ const apiUrl = import.meta.env.PUBLIC_OAPI_URL
           <p>Envoyez une demande à un autre membre.</p>
         </div>
         <form data-add-form>
-          <label for="friend-id">Identifiant OAPI du membre</label>
+          <label for="friend-id">Tag Discord de votre ami</label>
           <div class="friends-input-row">
-            <input id="friend-id" name="member" type="text" placeholder="Ex. a1b2c3d4e5f6g7h" required maxlength="64" pattern="[a-zA-Z0-9]{1,64}" aria-describedby="friend-id-help" autocomplete="off" spellcheck="false" data-api-control disabled />
+            <input id="friend-id" name="member" type="text" placeholder="Ex. rerebleue" required maxlength="33" aria-describedby="friend-id-help" autocomplete="off" autocapitalize="none" spellcheck="false" data-api-control disabled />
             <button class="friend-button" type="submit" data-api-control disabled>Envoyer la demande</button>
           </div>
-          <p id="friend-id-help" class="friends-small">Utilisez son identifiant de membre OAPI, distinct de son pseudo et de son identifiant Discord.</p>
+          <p id="friend-id-help" class="friends-small">Son nom d’utilisateur Discord exact, avec ou sans @, par exemple rerebleue. Votre ami doit être connu d’OAPI.</p>
         </form>
       </section>
 
@@ -102,7 +102,7 @@ const apiUrl = import.meta.env.PUBLIC_OAPI_URL
       <li class="friend-row">
         <div class="friend-person">
           <div class="friend-avatar"><span data-initial aria-hidden="true"></span><img data-avatar alt="" hidden referrerpolicy="no-referrer" /></div>
-          <div class="friend-profile"><h3 data-name></h3><p data-tag></p><p class="friend-since" data-since></p><p class="friend-member-id">ID OAPI : <code data-member-id></code></p></div>
+          <div class="friend-profile"><h3 data-name></h3><p data-tag></p><p class="friend-since" data-since></p></div>
         </div>
         <div class="friend-actions" data-actions></div>
       </li>
@@ -190,8 +190,7 @@ const apiUrl = import.meta.env.PUBLIC_OAPI_URL
   .friend-profile { min-width: 0; overflow-wrap: anywhere; }
   .friend-profile h3 { font: 800 1.05rem var(--sans); margin: 0; }
   .friend-profile p { font-size: .85rem; margin: .1rem 0 0; color: var(--muted); }
-  .friend-profile .friend-since, .friend-profile .friend-member-id { font-size: .75rem; }
-  .friend-member-id code { color: var(--muted); font-size: .75rem; user-select: all; }
+  .friend-profile .friend-since { font-size: .75rem; }
   .friend-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
   .friend-actions .friend-button { font-size: .85rem; padding: .45rem .8rem; }
   .friends-empty { color: var(--muted); padding: 1.5rem .2rem; margin: 0; font-size: .95rem; }

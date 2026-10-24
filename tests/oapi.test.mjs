@@ -35,11 +35,9 @@ test('posts actions against the other member ID, with no body or custom headers,
     return String(url).endsWith('/remove') ? new Response(null, { status: 204 })
       : Response.json({ friendship_id: 'relation123', status: 'accepted' });
   });
-  assert.equal((await client.mutate('friend123', 'request')).status, 'accepted');
   assert.equal((await client.mutate('friend123', 'accept')).status, 'accepted');
   assert.equal(await client.mutate('friend123', 'remove'), undefined);
   assert.deepEqual(calls.map(([url]) => url), [
-    'https://oapi.example/api/friends/me/friend123/request',
     'https://oapi.example/api/friends/me/friend123/accept',
     'https://oapi.example/api/friends/me/friend123/remove',
   ]);
@@ -55,9 +53,51 @@ test('rejects invalid member IDs before making any request', async () => {
   let calls = 0;
   const client = createOapiClient('https://oapi.example/api', async () => { calls++; return new Response(); });
   for (const id of ['', '../admin', 'a/b', 'x'.repeat(65), 'membre avec espaces']) {
-    await assert.rejects(client.mutate(id, 'request'), (error) => error instanceof OapiError && error.status === 400);
+    await assert.rejects(client.mutate(id, 'remove'), (error) => error instanceof OapiError && error.status === 400);
   }
   assert.equal(calls, 0);
+});
+
+test('sends a friend request by exact Discord tag with a bodiless cookie-authenticated POST', async () => {
+  const calls = [];
+  const client = createOapiClient('https://oapi.example/api', async (url, options) => {
+    calls.push([String(url), options]);
+    return Response.json({ friendship_id: 'relation123', status: 'pending' });
+  });
+  assert.equal((await client.requestByTag(' @RereBleue ')).status, 'pending');
+  assert.equal(calls[0][0], 'https://oapi.example/api/friends/me/rerebleue/request');
+  assert.equal(calls[0][1].method, 'POST');
+  assert.equal(calls[0][1].credentials, 'include');
+  assert.equal(calls[0][1].body, undefined);
+  assert.equal(calls[0][1].headers, undefined);
+});
+
+test('rejects invalid Discord tags without contacting OAPI', async () => {
+  let calls = 0;
+  const client = createOapiClient('https://oapi.example/api', async () => { calls++; return new Response(); });
+  for (const tag of ['', '@', 'a', 'a'.repeat(33), 'hello world', 'a/b', "rere' || true", 'double..point']) {
+    await assert.rejects(client.requestByTag(tag), (error) => error instanceof OapiError && error.status === 400);
+  }
+  assert.equal(calls, 0);
+});
+
+test('disallows sending requests through the internal-ID mutation method', async () => {
+  let calls = 0;
+  const client = createOapiClient('https://oapi.example/api', async () => { calls++; return new Response(); });
+  await assert.rejects(client.mutate('friend123', 'request'), (error) => error.status === 400);
+  assert.equal(calls, 0);
+});
+
+test('explains that a Discord tag was not found and preserves session and quota errors', async () => {
+  for (const status of [400, 401, 404, 409, 429, 502]) {
+    const client = createOapiClient('https://oapi.example/api', async () => new Response(null, { status }));
+    await assert.rejects(client.requestByTag('rerebleue'), (error) => {
+      assert.equal(error.status, status);
+      if (status === 400 || status === 404) assert.match(error.message, /tag Discord/);
+      if (status === 429) assert.equal(error.retryAfter, 60);
+      return true;
+    });
+  }
 });
 
 test('reports session expiry separately from a service outage without exposing response bodies', async () => {
@@ -79,7 +119,7 @@ test('honours Retry-After and prevents requests during the cooldown', async () =
     return new Response(null, { status: 429, headers: { 'Retry-After': '30' } });
   });
   await assert.rejects(client.getFriends(), (error) => error.status === 429 && error.retryAfter === 30);
-  await assert.rejects(client.mutate('friend123', 'request'), (error) => error.status === 429);
+  await assert.rejects(client.mutate('friend123', 'accept'), (error) => error.status === 429);
   assert.equal(calls, 1);
   assert.ok(client.retryAt > Date.now());
 });

@@ -26,7 +26,7 @@ export interface FriendList {
   outgoing: Friendship[];
 }
 
-export type FriendAction = 'request' | 'accept' | 'remove';
+export type FriendAction = 'accept' | 'remove';
 
 const memberId = /^[a-zA-Z0-9]{1,64}$/;
 const messages: Record<number, string> = {
@@ -139,7 +139,24 @@ export function createOapiClient(baseUrl: string, fetcher: typeof fetch = fetch)
       }
       return data;
     },
+    async requestByTag(value: string): Promise<{ friendship_id: string; status: 'pending' | 'accepted' }> {
+      const tag = value.trim().replace(/^@/, '').toLowerCase();
+      const invalidTag = 'Vérifiez le tag Discord : 2 à 32 lettres, chiffres, points ou underscores, sans espaces ni points consécutifs.';
+      if (!/^[a-z0-9._]{2,32}$/.test(tag) || tag.includes('..')) throw new OapiError(400, invalidTag);
+      try {
+        return await call(`/friends/me/${encodeURIComponent(tag)}/request`, 'POST') as { friendship_id: string; status: 'pending' | 'accepted' };
+      } catch (error) {
+        if (error instanceof OapiError && error.status === 400) {
+          throw new OapiError(400, 'Vérifiez le tag Discord. Vous ne pouvez pas vous ajouter vous-même.');
+        }
+        if (error instanceof OapiError && error.status === 404) {
+          throw new OapiError(404, 'Aucun membre OAPI ne correspond à ce tag Discord. Vérifiez son nom d’utilisateur exact.');
+        }
+        throw error;
+      }
+    },
     async mutate(id: string, action: FriendAction): Promise<{ friendship_id: string; status: 'pending' | 'accepted' } | undefined> {
+      if (action !== 'accept' && action !== 'remove') throw new OapiError(400, 'Envoyez les demandes exclusivement par tag Discord.');
       if (!memberId.test(id)) throw new OapiError(400);
       return await call(`/friends/me/${encodeURIComponent(id)}/${action}`, 'POST') as { friendship_id: string; status: 'pending' | 'accepted' } | undefined;
     },

@@ -60,8 +60,9 @@ Dans OAPI, déclarer l’origine du site dans `site_auth.url` ou `site_auth.extr
 Pour un test local, lancer OAPI sur `http://localhost:3000`, autoriser `http://localhost:4321`, et ouvrir le site avec ce même nom d’hôte.
 Si le navigateur bloque les cookies tiers, héberger OAPI sous un sous-domaine du même domaine que le site.
 
-L’API actuelle ne fournit pas de recherche de membres ni l’identifiant PocketBase du membre connecté dans `/auth/site/me`.
-L’ajout nécessite donc l’identifiant d’enregistrement `discord_users` du destinataire (1 à 64 caractères alphanumériques), fourni par ce membre ou l’administration OAPI : un pseudo ou un identifiant Discord ne le remplace pas.
+L’ajout se fait exclusivement par le nom d’utilisateur Discord exact du destinataire, par exemple `rerebleue` ou `@rerebleue`, via la route existante `POST /friends/me/rerebleue/request` (sans corps). Son paramètre destinataire désigne un tag Discord et n’accepte plus les identifiants PocketBase.
+OAPI normalise les espaces de bord, le `@` initial et les majuscules, puis retrouve le compte à partir du champ `discord_tag`. Le membre doit déjà être connu d’OAPI ; le nom d’affichage Discord ne remplace pas le nom d’utilisateur.
+Cette fonctionnalité nécessite de déployer également l’évolution OAPI de la route existante. Les autres actions continuent à utiliser les identifiants internes fournis dans les listes d’amis.
 Les demandes reçues peuvent être acceptées ou refusées, les demandes envoyées annulées et les amis retirés après confirmation.
 Les listes sont chargées à l’ouverture et après une action, ou manuellement avec « Actualiser » ; aucun polling automatique.
 Une réponse `429` désactive temporairement les appels ; le délai `Retry-After` est respecté, avec 60 secondes par défaut si l’en-tête n’est pas lisible via CORS.

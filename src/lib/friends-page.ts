@@ -136,7 +136,6 @@ export function initFriendsPage(root: HTMLElement) {
       const name = displayName(entry.user);
       row.querySelector('[data-name]')!.textContent = name;
       row.querySelector('[data-tag]')!.textContent = entry.user.discord_tag || '';
-      row.querySelector('[data-member-id]')!.textContent = entry.user.id;
       row.querySelector('[data-since]')!.textContent = dateLabel(entry.since, kind);
       setAvatar(row.querySelector<HTMLElement>('.friend-avatar')!, entry.user);
       const actions = row.querySelector<HTMLElement>('[data-actions]')!;
@@ -191,9 +190,9 @@ export function initFriendsPage(root: HTMLElement) {
     await refreshFriends();
   }
 
-  async function mutate(id: string, action: FriendAction, kind?: keyof FriendList) {
+  async function mutate(id: string, action: FriendAction | 'request', kind?: keyof FriendList) {
     await perform(async () => {
-      const result = await client.mutate(id, action);
+      const result = action === 'request' ? await client.requestByTag(id) : await client.mutate(id, action);
       if (action === 'request') memberInput.value = '';
       feedback.textContent = action === 'request'
         ? result?.status === 'accepted' ? 'Demande réciproque acceptée : vous êtes maintenant amis !' : 'Votre demande d’ami a été envoyée.'
@@ -222,9 +221,9 @@ export function initFriendsPage(root: HTMLElement) {
 
   form.addEventListener('submit', (event) => {
     event.preventDefault();
-    const id = memberInput.value.trim();
-    memberInput.value = id;
-    if (form.reportValidity()) void mutate(id, 'request');
+    const tag = memberInput.value.trim();
+    memberInput.value = tag;
+    if (form.reportValidity()) void mutate(tag, 'request');
   });
   search.addEventListener('input', () => renderList('friends'));
   get('[data-refresh]').addEventListener('click', () => { void perform(refreshFriends); });
