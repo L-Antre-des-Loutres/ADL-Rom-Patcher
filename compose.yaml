@@ -4,6 +4,7 @@ services:
       context: .
       args:
         PUBLIC_OAPI_URL: ${PUBLIC_OAPI_URL:-https://oapi.antredesloutres.fr/api}
+    container_name: site-adl_rom_patcher
     ports:
       - "8093:80"
     restart: unless-stopped
