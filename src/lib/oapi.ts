@@ -42,6 +42,21 @@ export interface RomDevice {
   is_disabled: boolean;
 }
 
+export interface LinkedSave {
+  file: Blob;
+  outcome: 'created' | 'reused';
+}
+
+/** Raw Mario Kart DS (EUR) save: exact size and `MKDSSV10` header. */
+export const MKDS_SAVE_SIZE = 0x40000;
+const MKDS_SAVE_MAGIC = 'MKDSSV10';
+
+export async function isRawMkdsSave(file: Blob): Promise<boolean> {
+  if (file.size !== MKDS_SAVE_SIZE) return false;
+  const header = new Uint8Array(await file.slice(0, 8).arrayBuffer());
+  return String.fromCharCode(...header) === MKDS_SAVE_MAGIC;
+}
+
 const memberId = /^[a-zA-Z0-9]{1,64}$/;
 const messages: Record<number, string> = {
   400: 'Vérifiez l’identifiant OAPI du membre. Vous ne pouvez pas vous ajouter vous-même.',
@@ -92,33 +107,36 @@ export function createOapiClient(baseUrl: string, fetcher: typeof fetch = fetch)
   const prefix = base.href.replace(/\/+$/, '');
   let retryAt = 0;
 
-  async function call(path: string, method = 'GET'): Promise<unknown> {
+  async function send(path: string, init: RequestInit, timeout = 15_000): Promise<Response> {
     if (Date.now() < retryAt) {
       throw new OapiError(429, undefined, Math.ceil((retryAt - Date.now()) / 1000));
     }
     let response: Response;
     try {
       response = await fetcher(`${prefix}${path}`, {
-        method,
+        ...init,
         credentials: 'include',
         cache: 'no-store',
-        signal: AbortSignal.timeout(15_000),
+        signal: AbortSignal.timeout(timeout),
       });
     } catch {
       throw new OapiError(0, 'Impossible de joindre OAPI. Vérifiez votre connexion, puis réessayez.');
     }
-    if (!response.ok) {
-      if (response.status === 429) {
-        // Cross-origin responses may not expose Retry-After: wait a full quota window then.
-        const header = response.headers.get('Retry-After');
-        const seconds = header && /^\d+$/.test(header) ? Number(header)
-          : header ? Math.ceil((Date.parse(header) - Date.now()) / 1000) : NaN;
-        const wait = Number.isFinite(seconds) && seconds > 0 ? seconds : 60;
-        retryAt = Date.now() + wait * 1000;
-        throw new OapiError(429, undefined, wait);
-      }
-      throw new OapiError(response.status);
+    if (response.status === 429) {
+      // Cross-origin responses may not expose Retry-After: wait a full quota window then.
+      const header = response.headers.get('Retry-After');
+      const seconds = header && /^\d+$/.test(header) ? Number(header)
+        : header ? Math.ceil((Date.parse(header) - Date.now()) / 1000) : NaN;
+      const wait = Number.isFinite(seconds) && seconds > 0 ? seconds : 60;
+      retryAt = Date.now() + wait * 1000;
+      throw new OapiError(429, undefined, wait);
     }
+    return response;
+  }
+
+  async function call(path: string, method = 'GET'): Promise<unknown> {
+    const response = await send(path, { method });
+    if (!response.ok) throw new OapiError(response.status);
     if (response.status === 204) return undefined;
     try {
       return await response.json();
@@ -188,6 +206,37 @@ export function createOapiClient(baseUrl: string, fetcher: typeof fetch = fetch)
         throw new OapiError(0, 'La réponse de la liste des appareils est illisible. Réessayez plus tard.');
       }
       return data.devices;
+    },
+    /** Sends the save in a single `save` field; the account comes from the session only. */
+    async linkMkdsSave(save: Blob): Promise<LinkedSave> {
+      const invalid = 'Ce fichier n’est pas une sauvegarde brute de Mario Kart DS (.sav de 262 144 octets). Les états de sauvegarde et fichiers .dsv ne sont pas acceptés.';
+      if (!await isRawMkdsSave(save)) throw new OapiError(400, invalid);
+      const body = new FormData();
+      body.append('save', save, 'mario-kart-ds.sav');
+      const response = await send('/saves/mkds/link', { method: 'POST', body }, 60_000);
+      if (!response.ok) {
+        const saveMessages: Record<number, string> = {
+          400: invalid,
+          403: 'Cette sauvegarde est liée à un autre compte, ou ce site n’est pas autorisé par OAPI.',
+          409: 'Les identifiants présents dans cette sauvegarde ne peuvent pas être réutilisés.',
+          422: 'La zone de liaison de cette sauvegarde est illisible ou endommagée.',
+          502: 'La liaison est temporairement indisponible. Réessayez plus tard avec le même fichier.',
+          503: 'La liaison de sauvegarde n’est pas encore activée sur le serveur.',
+        };
+        // OAPI explains save-specific refusals in a short plain-text body.
+        let detail = '';
+        if ((response.headers.get('Content-Type') ?? '').startsWith('text/plain')) {
+          detail = (await response.text().catch(() => '')).trim();
+        }
+        const fallback = saveMessages[response.status] ?? messages[response.status];
+        throw new OapiError(response.status, detail && detail.length <= 300 && response.status !== 502 ? detail : fallback);
+      }
+      const file = await response.blob();
+      if (!await isRawMkdsSave(file)) {
+        throw new OapiError(0, 'La sauvegarde renvoyée par OAPI est illisible. Réessayez avec le même fichier.');
+      }
+      const outcome = response.headers.get('X-ADLN-Link') === 'reused' ? 'reused' : 'created';
+      return { file: new Blob([file], { type: 'application/octet-stream' }), outcome };
     },
     async revokeRomDevice(id: string): Promise<void> {
       if (!memberId.test(id)) throw new OapiError(400, 'L’identifiant de l’appareil est invalide.');

@@ -1,0 +1,110 @@
+---
+import Layout from '../layouts/Layout.astro';
+import '../styles/account.css';
+
+const apiUrl = import.meta.env.PUBLIC_OAPI_URL
+  || (import.meta.env.DEV ? 'http://localhost:3000/api' : 'https://oapi.antredesloutres.fr/api');
+---
+
+<Layout title="Lier ma sauvegarde · ADL ROM Patcher" description="Liez votre sauvegarde Mario Kart DS à votre compte ADL avec Discord et téléchargez la copie liée.">
+  <header class="friends-nav">
+    <a href="/" class="friends-logo" aria-label="ADL ROM Patcher, accueil">ADL<span>ROM</span></a>
+    <nav aria-label="Navigation principale">
+      <a href="/#jeux">Jeux</a>
+      <a href="/amis/">Amis</a>
+      <a href="/connexion/">Lier mon jeu</a>
+      <a href="/sauvegarde/" aria-current="page">Ma sauvegarde</a>
+    </nav>
+  </header>
+
+  <main class="friends-page save-page" data-api-url={apiUrl}>
+    <div class="friends-heading">
+      <p class="friends-eyebrow">▶ Mario Kart DS</p>
+      <h1>Votre sauvegarde.<br /><span>Votre compte ADL.</span></h1>
+      <p class="friends-lead">Ajoutez à votre sauvegarde l’identifiant de votre compte ADL. Votre progression reste intacte.</p>
+    </div>
+
+    <p data-session-loading role="status">Vérification de votre connexion…</p>
+    <noscript><p class="friends-panel">Activez JavaScript pour lier votre sauvegarde.</p></noscript>
+    <div class="friends-alert" data-error hidden role="alert">
+      <p data-error-message></p>
+      <button class="friend-button secondary" type="button" data-retry data-api-control>Réessayer</button>
+    </div>
+    <p class="friends-feedback" data-feedback role="status" aria-live="polite"></p>
+    <p class="friends-cooldown" data-cooldown role="status" hidden></p>
+
+    <section class="friends-panel friends-guest" data-guest hidden aria-labelledby="guest-title">
+      <div class="friends-guest-icon" aria-hidden="true">
+        <svg viewBox="0 0 64 64" width="64" height="64" fill="none" stroke="currentColor" stroke-width="3">
+          <path d="M14 8h30l8 8v40H14z" /><path d="M22 8v14h18V8M22 56V38h22v18" />
+        </svg>
+      </div>
+      <p class="friends-eyebrow">Étape 1</p>
+      <h2 id="guest-title">Connectez votre compte Discord</h2>
+      <p>Votre compte ADL et votre joueur DS sont créés automatiquement à la première connexion.</p>
+      <a class="friend-button discord" data-login>Se connecter avec Discord <span aria-hidden="true">↗</span></a>
+      <p class="friends-small">La connexion est gérée par OAPI.</p>
+    </section>
+
+    <section class="friends-account friends-panel" data-account hidden aria-label="Compte connecté">
+      <div class="friends-identity">
+        <div class="friend-avatar" aria-hidden="true"><span data-account-initial></span></div>
+        <div><strong data-account-name></strong><p class="friends-connected">● Connecté avec Discord</p></div>
+      </div>
+      <a class="friends-logout" data-logout>Se déconnecter</a>
+    </section>
+
+    <div data-workspace hidden>
+      <section class="friends-panel save-warning" aria-labelledby="before-title">
+        <h2 id="before-title">Avant de commencer</h2>
+        <ul>
+          <li><strong>Fermez votre émulateur</strong> avant de remplacer la sauvegarde, sinon il pourrait l’écraser.</li>
+          <li><strong>Gardez une copie de votre sauvegarde d’origine.</strong> Le site ne la modifie pas : il vous renvoie une copie séparée.</li>
+          <li><strong>La copie liée est personnelle.</strong> Elle contient l’identifiant de votre appareil : ne la partagez pas, quiconque l’a peut se faire passer pour vous.</li>
+        </ul>
+      </section>
+
+      <section class="friends-panel save-form-panel" aria-labelledby="upload-title">
+        <p class="friends-eyebrow">+ Étapes 2 à 4</p>
+        <h2 id="upload-title">Lier ma sauvegarde</h2>
+        <p>Choisissez le fichier <code>.sav</code> brut de Mario Kart DS (version européenne, 256 Kio). Les états de sauvegarde et les fichiers <code>.dsv</code> ne sont pas acceptés.</p>
+        <form data-save-form>
+          <label for="save-file">Sauvegarde Mario Kart DS</label>
+          <input id="save-file" name="save" type="file" accept=".sav" data-api-control disabled />
+          <button class="friend-button" type="submit" data-link data-api-control disabled>Lier ma sauvegarde</button>
+        </form>
+        <p class="friends-small">Si une erreur survient, réessayez avec le même fichier : le même identifiant sera réutilisé.</p>
+      </section>
+
+      <section class="friends-panel save-result" data-result hidden aria-labelledby="result-title">
+        <p class="friends-eyebrow">✓ Étape 5</p>
+        <h2 id="result-title">Copie liée prête</h2>
+        <p data-result-message></p>
+        <a class="friend-button" data-download>Télécharger la sauvegarde liée</a>
+        <p class="friends-small">Remplacez la sauvegarde de votre émulateur par ce fichier, émulateur fermé. Le fichier n’est conservé que sur cette page.</p>
+        <p class="friends-small">La connexion au compte depuis le jeu arrivera avec une prochaine version de la ROM : cette sauvegarde est prête, mais ne prouve pas encore que la connexion en jeu fonctionne.</p>
+      </section>
+    </div>
+    <p class="friends-footer">ADL ROM Patcher · Les bonnes aventures se jouent ensemble.</p>
+  </main>
+</Layout>
+
+<script>
+  import { initSavePage } from '../lib/save-page';
+  initSavePage(document.querySelector<HTMLElement>('.save-page')!);
+</script>
+
+<style is:global>
+  .save-page [data-workspace] { display: grid; gap: 1.5rem; margin-top: 1.5rem; }
+  .save-page [data-workspace][hidden] { display: none; }
+  .save-warning { border-color: var(--gold); }
+  .save-warning ul { margin: .75rem 0 0; padding-left: 1.2rem; display: grid; gap: .6rem; }
+  .save-warning li { color: var(--muted); }
+  .save-warning strong { color: var(--text, inherit); }
+  .save-form-panel > p:not(.friends-eyebrow):not(.friends-small) { color: var(--muted); }
+  .save-form-panel label { display: block; font-weight: 800; margin: 1.25rem 0 .5rem; }
+  .save-form-panel input[type='file'] { display: block; max-width: 100%; margin-bottom: 1rem; }
+  .save-page .friends-small { color: var(--muted); }
+  .save-result { border-color: #8ee5b5; }
+  .save-result .friend-button { display: inline-block; margin: .5rem 0 1rem; }
+</style>

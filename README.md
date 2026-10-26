@@ -77,6 +77,13 @@ Il reste uniquement en mémoire et est effacé de la page à l’expiration, à 
 Les appareils déjà liés sont listés via `GET /auth/rom/devices`, avec leur nom, date de liaison, état et un bouton de révocation avec confirmation (`POST /auth/rom/devices/{id}/revoke`). Après saisie du code dans le jeu, « Actualiser » permet de voir le nouvel appareil ; aucun polling automatique n’est effectué.
 Le site n’appelle jamais `/auth/rom/token` : l’échange du code contre un token est réservé au jeu. Les routes ROM doivent être déployées dans OAPI et la collection PocketBase `discord_identity_token` configurée conformément à sa documentation.
 
+## Lier une sauvegarde Mario Kart DS
+
+La page `/sauvegarde/`, accessible par « Ma sauvegarde », envoie une sauvegarde Mario Kart DS brute (`.sav` EUR de 262 144 octets commençant par `MKDSSV10`) à `POST /saves/mkds/link` d’OAPI, en `multipart/form-data` avec un seul champ `save` et le cookie de session. Le compte vient uniquement de la session Discord : aucun identifiant n’est envoyé par le navigateur.
+OAPI crée au besoin le compte `discord_users` et le joueur DS Games, enregistre l’appareil dans `adln_devices` et renvoie une copie liée. Le site la propose au téléchargement via une URL `blob:` en mémoire, révoquée en quittant la page ou en changeant de fichier ; rien n’est stocké dans le navigateur.
+Le site vérifie la taille et l’en-tête avant l’envoi, OAPI revalide tout. La page rappelle de fermer l’émulateur, de garder la sauvegarde d’origine et de ne pas partager la copie liée. La connexion du jeu avec cet identifiant dépend d’une future version de la ROM.
+Le contrat complet (format, chiffrement, reprise, codes d’erreur) est décrit dans `docs/save_link.md` d’OAPI. La route nécessite `ADLN_DEVICE_WRAPPING_KEY` côté OAPI.
+
 ## Vérification
 
 ```sh
